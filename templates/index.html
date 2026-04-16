@@ -3,31 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PolyContent AI</title>
+    <title>PolyContent AI - Pro Hub</title>
     <style>
-        body { font-family: sans-serif; text-align: center; padding: 20px; background: #f4f4f9; }
-        .container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: auto; }
-        textarea { width: 100%; height: 100px; margin: 10px 0; border-radius: 5px; border: 1px solid #ccc; padding: 10px; }
-        .btn-main { background: #007bff; color: white; border: none; padding: 12px 20px; border-radius: 5px; cursor: pointer; width: 100%; font-size: 16px; }
-        .result-box { margin-top: 20px; padding: 15px; background: #e9ecef; border-radius: 8px; text-align: left; }
+        :root { --bg: #101827; --card: #1f2937; --accent: #2563eb; --text: #f9fafb; }
+        body { background-color: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; padding: 20px; }
+        .container { background: var(--card); padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); width: 100%; max-width: 500px; text-align: center; }
+        h1 { font-size: 1.8rem; margin-bottom: 5px; }
+        .subtitle { color: #9ca3af; font-size: 0.9rem; margin-bottom: 25px; }
+        .mode-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .mode-btn { background: #374151; border: 2px solid transparent; color: white; padding: 15px; border-radius: 12px; cursor: pointer; font-weight: bold; }
+        .mode-btn:hover { border-color: var(--accent); }
+        textarea { width: 100%; height: 120px; background: #111827; border: 1px solid #374151; border-radius: 12px; color: white; padding: 15px; box-sizing: border-box; margin-bottom: 20px; }
+        .btn-submit { background: var(--accent); color: white; border: none; padding: 15px; width: 100%; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 1rem; }
+        .result-box { margin-top: 25px; padding: 20px; background: #374151; border-radius: 15px; text-align: left; }
+        .pdf-btn { background: #059669; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; margin-top: 15px; width: 100%; font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🚀 PolyContent AI</h1>
+        <div style="font-size: 40px;">🚀</div>
+        <h1>Générateur de Succès</h1>
+        <p class="subtitle">Propulsez votre business immobilier ou freelance.</p>
+        
+        <div class="mode-buttons">
+            <button class="mode-btn">🏠 IMMOBILIER</button>
+            <button class="mode-btn">💼 FREELANCE PRO</button>
+        </div>
+
         <form method="POST">
-            <textarea name="idee" placeholder="Entrez votre idée (ex: maison, business...)"></textarea>
-            <button type="submit" class="btn-main">Recycler le contenu</button>
+            <textarea name="user_input" placeholder="✨ Collez l'annonce Upwork ou l'idée ici..."></textarea>
+            <button type="submit" class="btn-submit">LANCER L'ANALYSE ✨</button>
         </form>
 
         {% if resultat_ia %}
             <div class="result-box">
-                <h3>✨ Résultat :</h3>
-                <p style="white-space: pre-wrap;">{{ resultat_ia }}</p>
+                <h3 style="margin-top:0;">✨ Résultat :</h3>
+                <p style="white-space: pre-wrap; font-size: 0.95rem;">{{ resultat_ia }}</p>
                 
-                <button onclick="verifierCode()" style="background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-top: 10px;">
-                    📥 Télécharger en PDF
-                </button>
+                <button onclick="verifierCode()" class="pdf-btn">📥 Télécharger en PDF</button>
 
                 <form id="pdfForm" action="/download-pdf" method="post" style="display: none;">
                     <input type="hidden" name="resultat_ia" value="{{ resultat_ia }}">
@@ -38,15 +51,13 @@
 
     <script>
     function verifierCode() {
-        const codeCorrect = "242"; // Ton code secret
-        let dejaEnregistre = localStorage.getItem("access_granted");
-
-        if (dejaEnregistre === "true") {
+        const codeCorrect = "242"; 
+        if (localStorage.getItem("access_granted") === "true") {
             document.getElementById("pdfForm").submit();
         } else {
-            let saisie = prompt("Entrez le code d'accès pour télécharger le PDF :");
+            let saisie = prompt("Entrez le code d'accès pour débloquer le PDF :");
             if (saisie === codeCorrect) {
-                localStorage.setItem("access_granted", "true"); // Sauvegarde pour la prochaine fois
+                localStorage.setItem("access_granted", "true");
                 document.getElementById("pdfForm").submit();
             } else {
                 alert("Code incorrect ! ❌");
