@@ -1,82 +1,60 @@
-import io
 import os
-from flask import Flask, request, send_file, render_template
+from flask import Flask, render_template, request, send_file
+import openai
 from fpdf import FPDF
 
 app = Flask(__name__)
 
-# --- CONFIGURATION DU RAPPORT PDF ---
-def creer_pdf_expert(contenu_ia, nom_client="Client"):
-    pdf = FPDF(orientation='P', unit='mm', format='A4')
-    pdf.add_page()
-    
-    try:
-        # Assure-toi que logo.png est dans ton dossier sur GitHub
-        pdf.image("logo.png", 10, 8, 30)
-    except:
-        pass 
+# Configuration de la clé API OpenAI
+openai.api_key = "TON_CODE_OPENAI_ICI"
 
-    # En-tête bleu PolyContent
-    pdf.set_font("Helvetica", 'B', 16)
-    pdf.set_xy(45, 15)
-    pdf.set_text_color(36, 99, 235)
-    pdf.cell(0, 10, "POLYCONTENT AI - RAPPORT OFFICIEL", ln=True)
-    
-    pdf.set_draw_color(36, 99, 235)
-    pdf.set_line_width(0.5)
-    pdf.line(10, 40, 200, 40)
-    pdf.ln(25)
-    
-    # Corps du document
-    pdf.set_text_color(0, 0, 0)
-    pdf.set_font("Helvetica", 'B', 12)
-    pdf.cell(0, 10, f"Analyse pour : {nom_client}", ln=True)
-    pdf.ln(5)
-    
-    pdf.set_font("Helvetica", size=11)
-    # Nettoyage des caractères spéciaux pour éviter les crashs
-    texte_propre = contenu_ia.encode('latin-1', 'ignore').decode('latin-1')
-    pdf.multi_cell(0, 8, texte_propre)
-    
-    # Pied de page
-    pdf.set_y(-20)
-    pdf.set_font("Helvetica", 'I', 8)
-    pdf.set_text_color(150, 150, 150)
-    pdf.cell(0, 10, "Produit généré par PolyContent AI - Nassau, Bahamas", align='C')
-    
-    return pdf.output(dest='S').encode('latin-1', 'ignore')
-
-# --- ROUTES DE L'APPLICATION ---
-
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/')
 def index():
-    resultat_ia = None
-    if request.method == 'POST':
-        # Récupération de l'idée de l'utilisateur
-        prompt = request.form.get('idee', '')
-        
-        # ICI : Tu peux garder ton code OpenAI/Claude actuel
-        # Pour le test, on crée un résultat simulé :
-        resultat_ia = f"Analyse stratégique pour : {prompt}\n\nVotre projet a un fort potentiel de croissance."
-        
-    return render_template('index.html', resultat_ia=resultat_ia)
+    # Cette route affiche ton interface PolyContent
+    return render_template('index.html')
+
+@app.route('/analyze', methods=['POST'])
+def analyze():
+    user_input = request.form.get('user_input')
+    if not user_input:
+        return "Veuillez entrer du texte."
+
+    try:
+        # Appel à OpenAI pour recycler le contenu
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "Tu es un expert en marketing digital."},
+                {"role": "user", "content": f"Recycle ce contenu de manière experte : {user_input}"}
+            ]
+        )
+        resultat = response.choices[0].message.content
+        return render_template('index.html', resultat_ia=resultat)
+    except Exception as e:
+        return f"Erreur lors de l'analyse : {str(e)}"
 
 @app.route('/download-pdf', methods=['POST'])
 def download_pdf():
-    # On récupère le texte généré pour le mettre dans le PDF
-    texte_ia = request.form.get('resultat_ia')
-    if not texte_ia:
-        return "Erreur : aucun contenu", 400
-
-    pdf_bin = creer_pdf_expert(texte_ia)
+    # Récupère le texte généré pour le mettre dans le PDF
+    resultat_ia = request.form.get('resultat_ia')
     
-    return send_file(
-        io.BytesIO(pdf_bin),
-        mimetype='application/pdf',
-        as_attachment=True,
-        download_name='Rapport_Expert_PolyContent.pdf'
-    )
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+    
+    # Titre du document
+    pdf.cell(200, 10, txt="Rapport d'Expert - PolyContent AI", ln=True, align='C')
+    pdf.ln(10)
+    
+    # Contenu du rapport (nettoyage des caractères spéciaux pour FPDF)
+    pdf.multi_cell(0, 10, txt=resultat_ia.encode('latin-1', 'replace').decode('latin-1'))
+    
+    path = "/tmp/rapport_expert.pdf"
+    pdf.output(path)
+    
+    return send_file(path, as_attachment=True)
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
+    # Configuration vitale pour Render
+    port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
