@@ -8,7 +8,7 @@ app = Flask(__name__)
 
 # --- CONFIGURATION ---
 # Mets ta clé complète entre les guillemets ci-dessous
-client = OpenAI(api_key="Sk-proj-ZzTG4dA0PjYKCQs7jNKtD9m6E0YjBzSxYjo7KyoMILrftTNOcxGOzuILjlcJ4XzXfG5GpPXguFT3BlbkFJsYNErhdj5JLb9AsOQVfAOvyclm6VNtY7p9hZGJs_Lhk2ttBjE-gyXCLE0JBraOkYp4r_B_9poA")
+client = OpenAI(api_key="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")
 
 class PDF(FPDF):
     def header(self):
