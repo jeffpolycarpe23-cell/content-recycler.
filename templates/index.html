@@ -5,31 +5,54 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PolyContent AI</title>
     <style>
-        body { font-family: sans-serif; text-align: center; padding: 50px; background: #f4f4f9; }
-        .container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: inline-block; }
-        textarea { width: 100%; height: 100px; margin: 10px 0; }
-        button { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+        body { font-family: sans-serif; text-align: center; padding: 20px; background: #f4f4f9; }
+        .container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: auto; }
+        textarea { width: 100%; height: 100px; margin: 10px 0; border-radius: 5px; border: 1px solid #ccc; padding: 10px; }
+        .btn-main { background: #007bff; color: white; border: none; padding: 12px 20px; border-radius: 5px; cursor: pointer; width: 100%; font-size: 16px; }
+        .result-box { margin-top: 20px; padding: 15px; background: #e9ecef; border-radius: 8px; text-align: left; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>🚀 PolyContent AI</h1>
         <form method="POST">
-            <textarea name="idee" placeholder="Entrez votre texte ici..."></textarea><br>
-            <button type="submit">Recycler le contenu</button>
+            <textarea name="idee" placeholder="Entrez votre idée (ex: maison, business...)"></textarea>
+            <button type="submit" class="btn-main">Recycler le contenu</button>
         </form>
 
         {% if resultat_ia %}
-            <div style="margin-top: 20px; padding: 15px; background: #e9ecef; text-align: left;">
-                <h3>Résultat :</h3>
-                <p>{{ resultat_ia }}</p>
+            <div class="result-box">
+                <h3>✨ Résultat :</h3>
+                <p style="white-space: pre-wrap;">{{ resultat_ia }}</p>
                 
-                <form action="/download-pdf" method="post">
+                <button onclick="verifierCode()" style="background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-top: 10px;">
+                    📥 Télécharger en PDF
+                </button>
+
+                <form id="pdfForm" action="/download-pdf" method="post" style="display: none;">
                     <input type="hidden" name="resultat_ia" value="{{ resultat_ia }}">
-                    <button type="submit" style="background: #28a745;">📥 Télécharger en PDF</button>
                 </form>
             </div>
         {% endif %}
     </div>
+
+    <script>
+    function verifierCode() {
+        const codeCorrect = "242"; // Ton code secret
+        let dejaEnregistre = localStorage.getItem("access_granted");
+
+        if (dejaEnregistre === "true") {
+            document.getElementById("pdfForm").submit();
+        } else {
+            let saisie = prompt("Entrez le code d'accès pour télécharger le PDF :");
+            if (saisie === codeCorrect) {
+                localStorage.setItem("access_granted", "true"); // Sauvegarde pour la prochaine fois
+                document.getElementById("pdfForm").submit();
+            } else {
+                alert("Code incorrect ! ❌");
+            }
+        }
+    }
+    </script>
 </body>
 </html>
