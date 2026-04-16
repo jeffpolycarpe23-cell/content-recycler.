@@ -5,7 +5,7 @@ from flask import Flask, render_template_string, request
 app = Flask(__name__)
 client = openai.OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
-# Ton code secret que tu peux changer quand tu veux
+# Ton code secret global
 CODE_ACCES_VALIDE = "WORLD2026" 
 
 HTML = '''
@@ -39,7 +39,7 @@ HTML = '''
         <div class="card">
             <form method="post" id="aiForm">
                 <input type="text" name="access_code" id="access_code" class="code-field" placeholder="VOTRE CODE ACCÈS" required>
-                <textarea name="content" placeholder="Collez votre texte ici..." required></textarea>
+                <textarea name="content" id="content_area" placeholder="Collez votre texte ici..." required></textarea>
                 <button type="submit">Générer les posts</button>
             </form>
 
@@ -49,17 +49,17 @@ HTML = '''
     </div>
 
     <script>
-        // SCRIPT MÉMOIRE : Se déclenche quand la page s'affiche
+        // Ce script s'exécute dans le téléphone du client
         document.addEventListener("DOMContentLoaded", function() {
             const inputCode = document.getElementById('access_code');
-            const savedCode = localStorage.getItem('user_poly_code');
             
-            // Si un code est déjà dans la mémoire du téléphone, on le remet
+            // 1. On récupère le code s'il a déjà été sauvé
+            const savedCode = localStorage.getItem('user_poly_code');
             if (savedCode) {
                 inputCode.value = savedCode;
             }
 
-            // Quand l'utilisateur clique sur le bouton, on enregistre le code
+            // 2. Juste avant d'envoyer le formulaire, on sauve le code
             document.getElementById('aiForm').onsubmit = function() {
                 localStorage.setItem('user_poly_code', inputCode.value);
             };
