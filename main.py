@@ -1,30 +1,25 @@
 import os
 import io
 from flask import Flask, render_template, request, send_file
-import openai
+from openai import OpenAI  # Nouvelle syntaxe
 from fpdf import FPDF
 
 app = Flask(__name__)
 
 # --- Configuration ---
-openai.api_key = "TA_CLE_OPENAI_ICI"
+client = OpenAI(api_key="TA_CLE_OPENAI_ICI") # Nouvelle manière d'appeler l'IA
 
 class PDF(FPDF):
     def header(self):
         self.set_font('Arial', 'B', 15)
-        self.cell(0, 10, 'PolyContent AI - Rapport de Strategie', 0, 1, 'C')
+        self.cell(0, 10, 'PolyContent AI - Rapport Expert', 0, 1, 'C')
         self.ln(10)
-
-    def footer(self):
-        self.set_y(-15)
-        self.set_font('Arial', 'I', 8)
-        self.cell(0, 10, f'Page {self.page_no()}', 0, 0, 'C')
 
 def generer_rapport_pdf(contenu):
     pdf = PDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
-    # On nettoie les emojis pour le PDF (obligatoire pour éviter les erreurs)
+    # Nettoyage des emojis pour éviter le crash du PDF
     texte_propre = contenu.encode('ascii', 'ignore').decode('ascii')
     texte_final = texte_propre.encode('latin-1', 'ignore').decode('latin-1')
     pdf.multi_cell(0, 10, txt=texte_final)
@@ -34,19 +29,21 @@ def generer_rapport_pdf(contenu):
 def index():
     resultat_ia = None
     if request.method == 'POST':
-        prompt = request.form.get('idee', '')
+        prompt = request.form.get('user_input') # Vérifie que c'est bien 'user_input' dans ton HTML
         if prompt:
             try:
-                response = openai.ChatCompletion.create(
+                # Nouvelle syntaxe OpenAI pour 2026
+                response = client.chat.completions.create(
                     model="gpt-3.5-turbo",
                     messages=[
-                        {"role": "system", "content": "Tu es un expert marketing. Utilise beaucoup d'emojis (🏠, 🚀, 💰)."},
-                        {"role": "user", "content": f"Recycle ceci : {prompt}"}
+                        {"role": "system", "content": "Tu es un expert marketing. Utilise des emojis."},
+                        {"role": "user", "content": f"Analyse ceci : {prompt}"}
                     ]
                 )
                 resultat_ia = response.choices[0].message.content
             except Exception as e:
-                resultat_ia = f"Erreur : {str(e)}"
+                resultat_ia = f"Erreur de connexion : {str(e)}"
+    
     return render_template('index.html', resultat_ia=resultat_ia)
 
 @app.route('/download-pdf', methods=['POST'])
