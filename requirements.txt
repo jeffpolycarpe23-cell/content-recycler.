@@ -1,4 +1,3 @@
 flask
-fpdf
 openai
 gunicorn
