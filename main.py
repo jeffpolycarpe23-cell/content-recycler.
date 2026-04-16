@@ -7,42 +7,38 @@ app = Flask(__name__)
 
 # --- CONFIGURATION DU RAPPORT PDF ---
 def creer_pdf_expert(contenu_ia, nom_client="Client"):
-    # On utilise 'P' pour Portrait, 'mm' pour millimètres et 'A4'
     pdf = FPDF(orientation='P', unit='mm', format='A4')
     pdf.add_page()
     
-    # 1. Insertion du Logo
     try:
-        # Assure-toi que logo.png est dans ton dossier sur ton MacBook
+        # Assure-toi que logo.png est dans ton dossier sur GitHub
         pdf.image("logo.png", 10, 8, 30)
     except:
         pass 
 
-    # 2. En-tête (Titre Bleu)
+    # En-tête bleu PolyContent
     pdf.set_font("Helvetica", 'B', 16)
     pdf.set_xy(45, 15)
-    pdf.set_text_color(36, 99, 235) # Ton bleu signature
+    pdf.set_text_color(36, 99, 235)
     pdf.cell(0, 10, "POLYCONTENT AI - RAPPORT OFFICIEL", ln=True)
     
-    # Ligne de séparation bleue
     pdf.set_draw_color(36, 99, 235)
     pdf.set_line_width(0.5)
     pdf.line(10, 40, 200, 40)
+    pdf.ln(25)
     
-    pdf.ln(25) # Espace
-    
-    # 3. Corps du document
+    # Corps du document
     pdf.set_text_color(0, 0, 0)
     pdf.set_font("Helvetica", 'B', 12)
     pdf.cell(0, 10, f"Analyse pour : {nom_client}", ln=True)
     pdf.ln(5)
     
     pdf.set_font("Helvetica", size=11)
-    # On utilise latin-1 pour la compatibilité, 'ignore' pour éviter les crashs sur les emojis
+    # Nettoyage des caractères spéciaux pour éviter les crashs
     texte_propre = contenu_ia.encode('latin-1', 'ignore').decode('latin-1')
     pdf.multi_cell(0, 8, texte_propre)
     
-    # 4. Pied de page
+    # Pied de page
     pdf.set_y(-20)
     pdf.set_font("Helvetica", 'I', 8)
     pdf.set_text_color(150, 150, 150)
@@ -50,23 +46,27 @@ def creer_pdf_expert(contenu_ia, nom_client="Client"):
     
     return pdf.output(dest='S').encode('latin-1', 'ignore')
 
-# --- TES ROUTES FLASK ---
+# --- ROUTES DE L'APPLICATION ---
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
     resultat_ia = None
     if request.method == 'POST':
-        # Ton code de génération IA ici
-        # simulation :
+        # Récupération de l'idée de l'utilisateur
         prompt = request.form.get('idee', '')
-        resultat_ia = f"Analyse stratégique terminée pour : {prompt}" 
+        
+        # ICI : Tu peux garder ton code OpenAI/Claude actuel
+        # Pour le test, on crée un résultat simulé :
+        resultat_ia = f"Analyse stratégique pour : {prompt}\n\nVotre projet a un fort potentiel de croissance."
+        
     return render_template('index.html', resultat_ia=resultat_ia)
 
 @app.route('/download-pdf', methods=['POST'])
 def download_pdf():
+    # On récupère le texte généré pour le mettre dans le PDF
     texte_ia = request.form.get('resultat_ia')
     if not texte_ia:
-        return "Erreur", 400
+        return "Erreur : aucun contenu", 400
 
     pdf_bin = creer_pdf_expert(texte_ia)
     
