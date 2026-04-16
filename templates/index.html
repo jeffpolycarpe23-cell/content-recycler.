@@ -1,1 +1,9 @@
+{% if resultat_ia %}
+    <form action="/download-pdf" method="post" style="margin-top: 20px;">
+        <input type="hidden" name="resultat_ia" value="{{ resultat_ia }}">
+        <button type="submit" style="background: #2463EB; color: white; padding: 10px 20px; border-radius: 5px; border: none; cursor: pointer;">
+            📥 Télécharger mon rapport (PDF)
+        </button>
+    </form>
+{% endif %}
 
