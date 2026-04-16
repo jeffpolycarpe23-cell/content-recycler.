@@ -8,7 +8,7 @@ app = Flask(__name__)
 
 # --- CONFIGURATION ---
 # REMPLACE BIEN TOUTE LA PHRASE ENTRE GUILLEMETS PAR TA VRAIE CLÉ (commençant par sk-...)
-client = OpenAI(api_key="sk-PRO_VRAIE_CLE_ICI")
+client = OpenAI(api_key="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")
 
 class PDF(FPDF):
     def header(self):
