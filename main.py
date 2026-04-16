@@ -7,7 +7,7 @@ from fpdf import FPDF
 app = Flask(__name__)
 
 # --- CONFIGURATION ---
-# REMPLACE BIEN TOUTE LA PHRASE ENTRE GUILLEMETS PAR TA VRAIE CLÉ (commençant par sk-...)
+# Mets ta clé complète entre les guillemets ci-dessous
 client = OpenAI(api_key="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")
 
 class PDF(FPDF):
@@ -20,8 +20,9 @@ def generer_rapport_pdf(contenu):
     pdf = PDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
-    texte_sans_emoji = contenu.encode('ascii', 'ignore').decode('ascii')
-    texte_final = texte_sans_emoji.encode('latin-1', 'ignore').decode('latin-1')
+    # Nettoyage pour éviter que le PDF ne plante avec les emojis
+    texte_propre = contenu.encode('ascii', 'ignore').decode('ascii')
+    texte_final = texte_propre.encode('latin-1', 'ignore').decode('latin-1')
     pdf.multi_cell(0, 10, txt=texte_final)
     return pdf.output()
 
@@ -33,17 +34,17 @@ def index():
         
         if prompt:
             try:
+                # C'est ici qu'on définit l'introduction personnalisée
                 response = client.chat.completions.create(
                     model="gpt-3.5-turbo",
                     messages=[
-                        {"role": "system", "content": "Tu es un expert marketing. Commence TOUJOURS tes réponses par : 'Jeff, l'IA a analysé les meilleures réponses à cette question ou proposition pour vous :' puis donne ton analyse avec des emojis."},
+                        {"role": "system", "content": "Tu es un expert marketing. Tu dois TOUJOURS commencer tes réponses par la phrase exacte : 'Jeff, l'IA a analysé les meilleures réponses à cette question ou proposition pour vous :' puis tu donnes ton analyse avec des emojis (🏠, 🚀, 💰)."},
                         {"role": "user", "content": prompt}
                     ]
                 )
                 resultat_ia = response.choices[0].message.content
             except Exception as e:
-                # On garde l'affichage propre même en cas d'erreur de clé
-                resultat_ia = f"Note : Vérifiez votre clé API OpenAI dans le code. (Erreur: {str(e)})"
+                resultat_ia = f"Note : Vérifiez votre clé API OpenAI. (Erreur: {str(e)})"
 
     return render_template('index.html', resultat_ia=resultat_ia)
 
@@ -53,7 +54,7 @@ def download():
     if not contenu_final:
         return "Erreur", 400
     pdf_bytes = generer_rapport_pdf(contenu_final)
-    return send_file(io.BytesIO(pdf_bytes), mimetype='application/pdf', as_attachment=True, download_name='Strategie_PolyContent.pdf')
+    return send_file(io.BytesIO(pdf_bytes), mimetype='application/pdf', as_attachment=True, download_name='Strategie_Jeff.pdf')
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
