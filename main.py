@@ -7,6 +7,7 @@ from fpdf import FPDF
 app = Flask(__name__)
 
 # --- CONFIGURATION ---
+# Utilise la variable d'environnement pour plus de sécurité sur Render
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
 class PDF(FPDF):
@@ -19,9 +20,9 @@ def generer_rapport_pdf(contenu):
     pdf = PDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
-    # Correction PDF : On nettoie les caractères spéciaux pour éviter l'Internal Server Error
-    texte_securise = contenu.encode('latin-1', 'replace').decode('latin-1')
-    pdf.multi_cell(0, 10, txt=texte_securise)
+    # On nettoie le texte pour éviter l'erreur que tu vois sur l'image
+    texte_propre = contenu.encode('latin-1', 'replace').decode('latin-1')
+    pdf.multi_cell(0, 10, txt=texte_propre)
     return pdf.output(dest='S').encode('latin-1')
 
 @app.route('/', methods=['GET', 'POST'])
@@ -33,16 +34,16 @@ def index():
 
         if prompt:
             try:
+                # --- LOGIQUE IMMOBILIER (Leboncoin/SeLoger) ---
                 if service == "immobilier":
-                    # Focus sur Leboncoin et SeLoger
                     system_msg = """Tu es un expert immobilier spécialisé sur Leboncoin et SeLoger. 
                     Analyse l'annonce et génère :
-                    1. Une annonce optimisée pour Leboncoin/SeLoger (titre accrocheur, points forts).
-                    2. Un script TikTok viral pour présenter ce bien.
-                    3. Un post LinkedIn pour ton réseau pro.
-                    4. Une légende Instagram avec emojis."""
+                    1. Une annonce optimisée pour Leboncoin/SeLoger (titre accrocheur).
+                    2. Un script TikTok viral.
+                    3. Un post LinkedIn et une légende Instagram."""
+                # --- LOGIQUE FREELANCE (Upwork/Prospection) ---
                 else:
-                    system_msg = "Tu es un expert en freelance et prospection. Aide le client à rédiger un script de vente pour Upwork, à résoudre un problème technique ou à convaincre un client."
+                    system_msg = "Tu es un expert en freelance. Aide le client à rédiger un script de vente pour Upwork ou à résoudre un problème technique."
 
                 response = client.chat.completions.create(
                     model="gpt-3.5-turbo",
@@ -55,7 +56,7 @@ def index():
                 resultat_ia = f"Jeff, l'IA a analysé les meilleures réponses pour votre projet : \n\n" + response.choices[0].message.content
             
             except Exception as e:
-                resultat_ia = f"Erreur de connexion : {str(e)}"
+                resultat_ia = f"Note : Erreur technique (Vérifiez la clé API). Détails : {str(e)}"
 
     return render_template('index.html', resultat_ia=resultat_ia)
 
@@ -64,8 +65,11 @@ def download():
     contenu_final = request.form.get('resultat_ia', '')
     if not contenu_final:
         return "Erreur : aucun contenu", 400
-    pdf_bytes = generer_rapport_pdf(contenu_final)
-    return send_file(io.BytesIO(pdf_bytes), mimetype='application/pdf', as_attachment=True, download_name='Strategie_Jeff.pdf')
+    try:
+        pdf_bytes = generer_rapport_pdf(contenu_final)
+        return send_file(io.BytesIO(pdf_bytes), mimetype='application/pdf', as_attachment=True, download_name='Strategie_Jeff.pdf')
+    except Exception:
+        return "Erreur lors de la création du PDF", 500
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
