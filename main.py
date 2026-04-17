@@ -7,7 +7,6 @@ from fpdf import FPDF
 app = Flask(__name__)
 
 # --- CONFIGURATION ---
-# Utilise la variable d'environnement pour plus de sécurité sur Render
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
 class PDF(FPDF):
@@ -20,9 +19,12 @@ def generer_rapport_pdf(contenu):
     pdf = PDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
-    # On nettoie le texte pour éviter l'erreur que tu vois sur l'image
-    texte_propre = contenu.encode('latin-1', 'replace').decode('latin-1')
-    pdf.multi_cell(0, 10, txt=texte_propre)
+    
+    # ÉTAPE DE SÉCURITÉ : On retire les emojis qui font planter le PDF
+    # On garde le texte et les accents, mais on ignore les symboles spéciaux
+    texte_nettoyé = contenu.encode('ascii', 'ignore').decode('ascii')
+    
+    pdf.multi_cell(0, 10, txt=texte_nettoyé)
     return pdf.output(dest='S').encode('latin-1')
 
 @app.route('/', methods=['GET', 'POST'])
@@ -34,14 +36,12 @@ def index():
 
         if prompt:
             try:
-                # --- LOGIQUE IMMOBILIER (Leboncoin/SeLoger) ---
                 if service == "immobilier":
                     system_msg = """Tu es un expert immobilier spécialisé sur Leboncoin et SeLoger. 
                     Analyse l'annonce et génère :
-                    1. Une annonce optimisée pour Leboncoin/SeLoger (titre accrocheur).
+                    1. Une annonce optimisée pour Leboncoin/SeLoger.
                     2. Un script TikTok viral.
-                    3. Un post LinkedIn et une légende Instagram."""
-                # --- LOGIQUE FREELANCE (Upwork/Prospection) ---
+                    3. Un post LinkedIn et Instagram."""
                 else:
                     system_msg = "Tu es un expert en freelance. Aide le client à rédiger un script de vente pour Upwork ou à résoudre un problème technique."
 
@@ -56,7 +56,7 @@ def index():
                 resultat_ia = f"Jeff, l'IA a analysé les meilleures réponses pour votre projet : \n\n" + response.choices[0].message.content
             
             except Exception as e:
-                resultat_ia = f"Note : Erreur technique (Vérifiez la clé API). Détails : {str(e)}"
+                resultat_ia = f"Erreur technique : {str(e)}"
 
     return render_template('index.html', resultat_ia=resultat_ia)
 
@@ -69,7 +69,7 @@ def download():
         pdf_bytes = generer_rapport_pdf(contenu_final)
         return send_file(io.BytesIO(pdf_bytes), mimetype='application/pdf', as_attachment=True, download_name='Strategie_Jeff.pdf')
     except Exception:
-        return "Erreur lors de la création du PDF", 500
+        return "Erreur lors de la génération du PDF", 500
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
