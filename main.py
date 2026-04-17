@@ -8,7 +8,16 @@ app = Flask(__name__)
 
 # --- CONFIGURATION ---
 # Mets ta clé complète entre les guillemets ci-dessous
-OpenAI(api_key="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")
+import os
+from openai import OpenAI
+
+# Cette ligne dit à Python : "Va chercher la clé nommée OPENAI_API_KEY dans Render"
+api_key = os.environ.get("OPENAI_API_KEY")
+
+if not api_key:
+    raise ValueError("La clé API est manquante dans les paramètres de Render !")
+
+client = OpenAI(api_key=api_key)
 
 
 class PDF(FPDF):
