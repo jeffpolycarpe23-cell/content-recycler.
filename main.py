@@ -7,18 +7,7 @@ from fpdf import FPDF
 app = Flask(__name__)
 
 # --- CONFIGURATION ---
-# Mets ta clé complète entre les guillemets ci-dessous
-import os
-from openai import OpenAI
-
-# Cette ligne dit à Python : "Va chercher la clé nommée OPENAI_API_KEY dans Render"
-api_key = os.environ.get("OPENAI_API_KEY")
-
-if not api_key:
-    raise ValueError("La clé API est manquante dans les paramètres de Render !")
-
-client = OpenAI(api_key=api_key)
-
+client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
 class PDF(FPDF):
     def header(self):
@@ -30,29 +19,37 @@ def generer_rapport_pdf(contenu):
     pdf = PDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
-    # Nettoyage pour éviter que le PDF ne plante avec les emojis
-    texte_propre = contenu.encode('ascii', 'ignore').decode('ascii')
-    texte_final = texte_propre.encode('latin-1', 'ignore').decode('latin-1')
-    pdf.multi_cell(0, 10, txt=texte_final)
-    return pdf.output()
+    texte_propre = contenu.encode('latin-1', 'ignore').decode('latin-1')
+    pdf.multi_cell(0, 10, txt=texte_propre)
+    return pdf.output(dest='S').encode('latin-1')
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
     resultat_ia = None
     if request.method == 'POST':
         prompt = request.form.get('user_input')
-        
+        # On récupère quel bouton a été cliqué
+        service = request.form.get('service_type') 
+
         if prompt:
             try:
-                # C'est ici qu'on définit l'introduction personnalisée
+                # --- PERSONNALISATION SELON LE BOUTON ---
+                if service == "immobilier":
+                    system_msg = "Tu es un expert marketing immobilier. Pour chaque ville/sujet, génère 3 scripts : 1 TikTok viral, 1 post LinkedIn expert, et 1 légende Instagram avec emojis."
+                else:
+                    system_msg = "Tu es un expert en freelance et prospection. Aide le client à rédiger un script de vente, à résoudre un problème technique ou à convaincre un client sur Upwork."
+
                 response = client.chat.completions.create(
                     model="gpt-3.5-turbo",
                     messages=[
-                        {"role": "system", "content": "Tu es un expert marketing. Tu dois TOUJOURS commencer tes réponses par la phrase exacte : 'Jeff, l'IA a analysé les meilleures réponses à cette question ou proposition pour vous :' puis tu donnes ton analyse avec des emojis (🏠, 🚀, 💰)."},
+                        {"role": "system", "content": system_msg},
                         {"role": "user", "content": prompt}
                     ]
                 )
-                resultat_ia = response.choices[0].message.content
+                
+                # Phrase de réassurance au début
+                resultat_ia = f"Jeff, l'IA a analysé les meilleures réponses pour votre projet : \n\n" + response.choices[0].message.content
+            
             except Exception as e:
                 resultat_ia = f"Note : Vérifiez votre clé API OpenAI. (Erreur: {str(e)})"
 
@@ -60,9 +57,9 @@ def index():
 
 @app.route('/download-pdf', methods=['POST'])
 def download():
-    contenu_final = request.form.get('resultat_ia', '')
+    contenu_final = request.form.get('resultat_ia')
     if not contenu_final:
-        return "Erreur", 400
+        return "Erreur : aucun contenu", 400
     pdf_bytes = generer_rapport_pdf(contenu_final)
     return send_file(io.BytesIO(pdf_bytes), mimetype='application/pdf', as_attachment=True, download_name='Strategie_Jeff.pdf')
 
