@@ -1,5 +1,6 @@
 import os
 import io
+import re
 from flask import Flask, render_template, request, send_file
 from openai import OpenAI
 from fpdf import FPDF
@@ -20,11 +21,15 @@ def generer_rapport_pdf(contenu):
     pdf.add_page()
     pdf.set_font("Arial", size=12)
     
-    # ÉTAPE DE SÉCURITÉ : On retire les emojis qui font planter le PDF
-    # On garde le texte et les accents, mais on ignore les symboles spéciaux
-    texte_nettoyé = contenu.encode('ascii', 'ignore').decode('ascii')
+    # NETTOYAGE RADICAL : On garde uniquement les lettres, chiffres et ponctuation de base
+    # On enlève TOUT ce qui ressemble à un emoji ou un caractère spécial bizarre
+    texte_propre = re.sub(r'[^\x00-\x7F]+', ' ', contenu)
     
-    pdf.multi_cell(0, 10, txt=texte_nettoyé)
+    # On s'assure que le texte n'est pas vide
+    if not texte_propre.strip():
+        texte_propre = "Analyse PolyContent AI terminee."
+
+    pdf.multi_cell(0, 10, txt=texte_propre)
     return pdf.output(dest='S').encode('latin-1')
 
 @app.route('/', methods=['GET', 'POST'])
@@ -37,13 +42,9 @@ def index():
         if prompt:
             try:
                 if service == "immobilier":
-                    system_msg = """Tu es un expert immobilier spécialisé sur Leboncoin et SeLoger. 
-                    Analyse l'annonce et génère :
-                    1. Une annonce optimisée pour Leboncoin/SeLoger.
-                    2. Un script TikTok viral.
-                    3. Un post LinkedIn et Instagram."""
+                    system_msg = "Expert immobilier SeLoger/Leboncoin. Genere une annonce immo, un script TikTok et des posts reseaux sociaux."
                 else:
-                    system_msg = "Tu es un expert en freelance. Aide le client à rédiger un script de vente pour Upwork ou à résoudre un problème technique."
+                    system_msg = "Expert freelance. Aide a la redaction de scripts Upwork et resolution de problemes."
 
                 response = client.chat.completions.create(
                     model="gpt-3.5-turbo",
@@ -52,9 +53,7 @@ def index():
                         {"role": "user", "content": prompt}
                     ]
                 )
-                
-                resultat_ia = f"Jeff, l'IA a analysé les meilleures réponses pour votre projet : \n\n" + response.choices[0].message.content
-            
+                resultat_ia = f"Jeff, l'IA a analyse vos reponses : \n\n" + response.choices[0].message.content
             except Exception as e:
                 resultat_ia = f"Erreur technique : {str(e)}"
 
@@ -68,8 +67,9 @@ def download():
     try:
         pdf_bytes = generer_rapport_pdf(contenu_final)
         return send_file(io.BytesIO(pdf_bytes), mimetype='application/pdf', as_attachment=True, download_name='Strategie_Jeff.pdf')
-    except Exception:
-        return "Erreur lors de la génération du PDF", 500
+    except Exception as e:
+        # On affiche l'erreur réelle pour comprendre si ca bloque encore
+        return f"Erreur PDF : {str(e)}", 500
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
