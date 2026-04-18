@@ -3,87 +3,112 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PolyContent AI - Pro Hub</title>
+    <title>PolyScraper AI - Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
-        :root { --bg: #101827; --card: #1f2937; --accent: #3b82f6; --text: #f3f4f6; }
-        body { background-color: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
-        .container { background: var(--card); padding: 2rem; border-radius: 1.5rem; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); width: 100%; max-width: 450px; text-align: center; }
-        h1 { font-size: 1.8rem; margin-bottom: 0.5rem; }
-        .subtitle { color: #9ca3af; font-size: 0.9rem; margin-bottom: 2rem; }
-        .mode-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-        .mode-btn { background: #374151; border: 2px solid transparent; padding: 15px; border-radius: 12px; color: white; cursor: pointer; transition: 0.3s; font-weight: bold; }
-        .mode-btn:hover { border-color: var(--accent); }
-        .mode-btn.active { border-color: var(--accent); background: rgba(59, 130, 246, 0.1); }
-        textarea { width: 100%; height: 120px; background: #111827; border: 1px solid #374151; border-radius: 12px; padding: 15px; color: white; margin-bottom: 20px; box-sizing: border-box; }
-        .btn-submit { background: var(--accent); color: white; width: 100%; padding: 15px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        .result-box { margin-top: 25px; padding: 20px; background: #374151; border-radius: 12px; text-align: left; }
-        .pdf-btn { background: #059669; color: white; width: 100%; padding: 12px; border-radius: 12px; border: none; margin-top: 15px; font-weight: bold; cursor: pointer; }
+        /* Correction de l'alignement et du style */
+        .result-content {
+            text-align: left !important;
+            display: block;
+            width: 100%;
+            overflow-wrap: break-word;
+        }
+        .result-content h3 { 
+            color: #60a5fa; 
+            font-size: 1.5rem; 
+            font-weight: 800; 
+            margin-top: 15px; 
+            margin-bottom: 10px;
+            line-height: 1.2;
+        }
+        .result-content strong { 
+            color: #fbbf24; 
+            font-weight: bold; 
+        }
+        .result-content ul { 
+            list-style-type: disc; 
+            margin-left: 20px; 
+            margin-top: 10px;
+            margin-bottom: 15px; 
+            color: #cbd5e1; 
+        }
+        .result-content li { 
+            margin-bottom: 8px; 
+            line-height: 1.5;
+        }
+        .hidden { display: none; }
     </style>
 </head>
-<body>
-    <div class="container">
-        <div style="font-size: 40px;">🚀</div>
-        <h1>Générateur de Succès</h1>
-        <p class="subtitle">Propulsez votre business immobilier ou freelance.</p>
+<body class="bg-slate-950 text-white min-h-screen flex items-center justify-center p-4 font-sans">
 
-        <form method="POST" id="mainForm">
-            <div class="mode-buttons">
-                <button type="button" onclick="selectMode('immobilier')" id="btn-immo" class="mode-btn">🏠 IMMOBILIER</button>
-                <button type="button" onclick="selectMode('freelance')" id="btn-free" class="mode-btn">💼 FREELANCE PRO</button>
-            </div>
+    <div class="max-w-2xl w-full bg-slate-900 p-8 rounded-[2.5rem] shadow-2xl border border-slate-800 my-10">
+        <div class="text-center mb-10">
+            <span class="bg-blue-500/10 text-blue-400 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-widest">Version 2.0 Pro</span>
+            <h1 class="text-4xl font-black mt-4 mb-2 tracking-tight">🕵️‍♂️ PolyScraper <span class="text-blue-500">AI</span></h1>
+            <p class="text-slate-500">L'extraction de données nouvelle génération.</p>
+        </div>
 
-            <input type="hidden" name="service_type" id="service_type" value="immobilier">
-
-            <textarea name="user_input" placeholder="✨ Collez l'annonce Upwork ou l'idée ici..." required></textarea>
-
-            <button type="submit" class="btn-submit" id="submit-btn">LANCER L'ANALYSE ✨</button>
+        <form id="scrapingForm" action="/analyser" method="POST" class="space-y-4">
+            <input type="url" name="url_cible" placeholder="Entrez l'URL du produit..." 
+                   class="w-full p-5 rounded-2xl bg-slate-800 border-2 border-slate-700 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all text-lg" required>
+            
+            <button id="btnSubmit" type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-5 rounded-2xl shadow-xl shadow-blue-900/20 transition-all active:scale-[0.98]">
+                EXTRAIRE LES DONNÉES ⚡️
+            </button>
         </form>
 
-        {% if resultat_ia %}
-        <div class="result-box">
-            <h3 style="margin-top:0;">✨ Résultat :</h3>
-            <p style="white-space: pre-wrap;">{{ resultat_ia }}</p>
+        <div id="loader" class="hidden mt-10 text-center animate-pulse">
+            <div class="inline-block animate-spin rounded-full h-10 w-10 border-4 border-blue-500 border-t-transparent mb-4"></div>
+            <p class="text-slate-400 font-medium">Analyse des données en cours...</p>
+        </div>
+
+        {% if resultat %}
+        <div class="mt-10 p-6 bg-slate-800/40 rounded-3xl border border-blue-500/20">
+            <div class="flex items-center justify-between mb-6 border-b border-slate-700 pb-4">
+                <h2 class="text-xs font-bold text-slate-500 uppercase tracking-widest">Rapport d'extraction</h2>
+                <span class="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]"></span>
+            </div>
             
-            <form action="/download-pdf" method="POST">
-                <input type="hidden" name="resultat_ia" value="{{ resultat_ia }}">
-                <button type="submit" class="pdf-btn">📩 Télécharger en PDF</button>
-            </form>
+            <div id="markdown-result" class="result-content text-slate-300">
+                {{ resultat }}
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 mt-8">
+                <form action="/download-excel" method="POST">
+                    <input type="hidden" name="resultat_ia" value="{{ resultat }}">
+                    <button type="submit" class="w-full bg-emerald-600/10 hover:bg-emerald-600 text-emerald-500 hover:text-white border border-emerald-600/30 py-4 rounded-2xl font-bold transition-all">
+                        📊 EXCEL
+                    </button>
+                </form>
+                <form action="/download-csv" method="POST">
+                    <input type="hidden" name="resultat_ia" value="{{ resultat }}">
+                    <button type="submit" class="w-full bg-slate-700/50 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-600/30 py-4 rounded-2xl font-bold transition-all">
+                        📂 CSV
+                    </button>
+                </form>
+            </div>
         </div>
         {% endif %}
     </div>
 
     <script>
-        function selectMode(mode) {
-            // Met à jour la valeur pour le serveur
-            document.getElementById('service_type').value = mode;
-            
-            // Change l'apparence des boutons
-            document.getElementById('btn-immo').classList.remove('active');
-            document.getElementById('btn-free').classList.remove('active');
-            
-            if(mode === 'immobilier') {
-                document.getElementById('btn-immo').classList.add('active');
-            } else {
-                document.getElementById('btn-free').classList.add('active');
-            }
+        // Gestion du chargement
+        const form = document.getElementById('scrapingForm');
+        if(form) {
+            form.onsubmit = function() {
+                document.getElementById('btnSubmit').style.display = 'none';
+                document.getElementById('loader').classList.remove('hidden');
+            };
         }
 
-        // Gestion du message de réassurance au clic sur "Lancer"
-        document.getElementById('mainForm').onsubmit = function() {
-            const mode = document.getElementById('service_type').value;
-            const btn = document.getElementById('submit-btn');
-            
-            if (mode === 'immobilier') {
-                btn.innerHTML = "✨ Création de vos scripts TikTok & IG...";
-            } else {
-                btn.innerHTML = "🚀 Rédaction de votre stratégie Freelance...";
-            }
-            btn.style.background = "#ffcc00";
-            btn.style.color = "#000";
-        };
-
-        // Activer le mode immo par défaut au chargement
-        selectMode('immobilier');
+        // Transformation Markdown immédiate
+        const resultDiv = document.getElementById('markdown-result');
+        if (resultDiv) {
+            // On nettoie le texte et on le transforme en HTML propre
+            const rawText = resultDiv.innerHTML.trim();
+            resultDiv.innerHTML = marked.parse(rawText);
+        }
     </script>
 </body>
 </html>
